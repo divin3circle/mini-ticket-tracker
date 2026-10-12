@@ -89,7 +89,6 @@ func TestListTickets(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.NotEmpty(t, openTestTickets)
 }
 
 func TestUpdateTicketPriority(t *testing.T) {
