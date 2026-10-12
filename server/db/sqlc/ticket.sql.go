@@ -9,17 +9,38 @@ import (
 	"context"
 )
 
-const countTicketStats = `-- name: CountTicketStats :one
-SELECT COUNT(*) AS row_count
+const countTicketStats = `-- name: CountTicketStats :many
+SELECT status, COUNT(*) AS row_count
 FROM tickets
-WHERE status = $1
+GROUP BY status
 `
 
-func (q *Queries) CountTicketStats(ctx context.Context, status TicketStatus) (int64, error) {
-	row := q.queryRow(ctx, q.countTicketStatsStmt, countTicketStats, status)
-	var row_count int64
-	err := row.Scan(&row_count)
-	return row_count, err
+type CountTicketStatsRow struct {
+	Status   TicketStatus `json:"status"`
+	RowCount int64        `json:"row_count"`
+}
+
+func (q *Queries) CountTicketStats(ctx context.Context) ([]CountTicketStatsRow, error) {
+	rows, err := q.query(ctx, q.countTicketStatsStmt, countTicketStats)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountTicketStatsRow
+	for rows.Next() {
+		var i CountTicketStatsRow
+		if err := rows.Scan(&i.Status, &i.RowCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const createTicket = `-- name: CreateTicket :one

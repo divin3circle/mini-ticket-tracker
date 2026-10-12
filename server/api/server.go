@@ -21,6 +21,7 @@ func NewServer(store *db.Store) *Server {
 	router.GET("/ping", server.checkHealth)
 	router.GET("/tickets/:id", server.getTicketByID)
 	router.GET("/tickets", server.listTickets)
+	router.GET("/tickets/stats", server.getTicketStats)
 
 	server.router = router
 	return server

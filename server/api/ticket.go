@@ -230,3 +230,32 @@ func (s *Server) updateTicket(ctx *gin.Context) {
 		"ticket":  updatedTicket,
 	})
 }
+
+type ticketStatsResponse struct {
+	Open       int64 `json:"open"`
+	InProgress int64 `json:"in_progress"`
+	Closed     int64 `json:"closed"`
+}
+
+func (s *Server) getTicketStats(ctx *gin.Context) {
+	rows, err := s.store.CountTicketStats(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	stats := ticketStatsResponse{}
+
+	for _, row := range rows {
+		switch row.Status {
+		case db.TicketStatusOpen:
+			stats.Open = row.RowCount
+		case db.TicketStatusInProgress:
+			stats.InProgress = row.RowCount
+		case db.TicketStatusClosed:
+			stats.Closed = row.RowCount
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"stats": stats})
+}

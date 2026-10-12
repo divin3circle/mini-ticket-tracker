@@ -38,7 +38,7 @@ SET priority = $1
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
--- name: CountTicketStats :one
-SELECT COUNT(*) AS row_count
+-- name: CountTicketStats :many
+SELECT status, COUNT(*) AS row_count
 FROM tickets
-WHERE status = sqlc.arg(status);
+GROUP BY status;
