@@ -36,6 +36,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listTicketsStmt, err = db.PrepareContext(ctx, listTickets); err != nil {
 		return nil, fmt.Errorf("error preparing query ListTickets: %w", err)
 	}
+	if q.updateTicketStmt, err = db.PrepareContext(ctx, updateTicket); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateTicket: %w", err)
+	}
 	if q.updateTicketPriorityStmt, err = db.PrepareContext(ctx, updateTicketPriority); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateTicketPriority: %w", err)
 	}
@@ -65,6 +68,11 @@ func (q *Queries) Close() error {
 	if q.listTicketsStmt != nil {
 		if cerr := q.listTicketsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listTicketsStmt: %w", cerr)
+		}
+	}
+	if q.updateTicketStmt != nil {
+		if cerr := q.updateTicketStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateTicketStmt: %w", cerr)
 		}
 	}
 	if q.updateTicketPriorityStmt != nil {
@@ -120,6 +128,7 @@ type Queries struct {
 	createTicketStmt         *sql.Stmt
 	getTicketByIDStmt        *sql.Stmt
 	listTicketsStmt          *sql.Stmt
+	updateTicketStmt         *sql.Stmt
 	updateTicketPriorityStmt *sql.Stmt
 	updateTicketStatusStmt   *sql.Stmt
 }
@@ -132,6 +141,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		createTicketStmt:         q.createTicketStmt,
 		getTicketByIDStmt:        q.getTicketByIDStmt,
 		listTicketsStmt:          q.listTicketsStmt,
+		updateTicketStmt:         q.updateTicketStmt,
 		updateTicketPriorityStmt: q.updateTicketPriorityStmt,
 		updateTicketStatusStmt:   q.updateTicketStatusStmt,
 	}

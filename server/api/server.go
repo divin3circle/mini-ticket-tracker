@@ -14,8 +14,13 @@ func NewServer(store *db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 
-	router.GET("/ping", server.checkHealth)
 	router.POST("/tickets", server.createTicket)
+
+	router.PATCH("/tickets/:id", server.updateTicket)
+
+	router.GET("/ping", server.checkHealth)
+	router.GET("/tickets/:id", server.getTicketByID)
+	router.GET("/tickets", server.listTickets)
 
 	server.router = router
 	return server

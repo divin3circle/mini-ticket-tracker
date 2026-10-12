@@ -13,11 +13,18 @@ SELECT * FROM tickets
 WHERE id = $1 LIMIT 1;
 
 -- name: ListTickets :many
-SELECT * FROM tickets
-WHERE status = $1
+SELECT id, title, description, status, priority, createdat
+FROM tickets
+WHERE (@status::ticket_status IS NULL OR status = @status::ticket_status)
 ORDER BY id
-LIMIT $2
-OFFSET $3;
+LIMIT @page_size OFFSET @page_offset;
+
+-- name: UpdateTicket :one
+UPDATE tickets
+SET status = @status,
+    priority = @priority
+WHERE id = @id
+RETURNING *;
 
 -- name: UpdateTicketStatus :one
 UPDATE tickets

@@ -11,12 +11,12 @@ CREATE TYPE "ticket_priority" AS ENUM (
 );
 
 CREATE TABLE "tickets" (
-  "id" bigserial PRIMARY KEY,
-  "title" varchar NOT NULL,
-  "description" varchar,
-  "status" ticket_status DEFAULT 'open',
-  "priority" ticket_priority NOT NULL,
-  "createdat" timestamptz NOT NULL DEFAULT now()
+                           "id" bigserial PRIMARY KEY,
+                           "title" varchar NOT NULL,
+                           "description" varchar NOT NULL DEFAULT '',
+                           "status" ticket_status NOT NULL DEFAULT 'open',
+                           "priority" ticket_priority NOT NULL,
+                           "createdat" timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX ON "tickets" ("title");

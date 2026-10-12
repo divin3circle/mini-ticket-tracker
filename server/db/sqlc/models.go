@@ -5,7 +5,6 @@
 package db
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"time"
@@ -98,10 +97,10 @@ func (ns NullTicketStatus) Value() (driver.Value, error) {
 }
 
 type Ticket struct {
-	ID          int64            `json:"id"`
-	Title       string           `json:"title"`
-	Description sql.NullString   `json:"description"`
-	Status      NullTicketStatus `json:"status"`
-	Priority    TicketPriority   `json:"priority"`
-	Createdat   time.Time        `json:"createdat"`
+	ID          int64          `json:"id"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Status      TicketStatus   `json:"status"`
+	Priority    TicketPriority `json:"priority"`
+	Createdat   time.Time      `json:"createdat"`
 }

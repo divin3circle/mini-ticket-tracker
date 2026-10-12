@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const countTicketStats = `-- name: CountTicketStats :one
@@ -16,7 +15,7 @@ FROM tickets
 WHERE status = $1
 `
 
-func (q *Queries) CountTicketStats(ctx context.Context, status NullTicketStatus) (int64, error) {
+func (q *Queries) CountTicketStats(ctx context.Context, status TicketStatus) (int64, error) {
 	row := q.queryRow(ctx, q.countTicketStatsStmt, countTicketStats, status)
 	var row_count int64
 	err := row.Scan(&row_count)
@@ -35,10 +34,10 @@ INSERT INTO tickets (
 `
 
 type CreateTicketParams struct {
-	Title       string           `json:"title"`
-	Description sql.NullString   `json:"description"`
-	Status      NullTicketStatus `json:"status"`
-	Priority    TicketPriority   `json:"priority"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Status      TicketStatus   `json:"status"`
+	Priority    TicketPriority `json:"priority"`
 }
 
 func (q *Queries) CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error) {
@@ -80,21 +79,21 @@ func (q *Queries) GetTicketByID(ctx context.Context, id int64) (Ticket, error) {
 }
 
 const listTickets = `-- name: ListTickets :many
-SELECT id, title, description, status, priority, createdat FROM tickets
-WHERE status = $1
+SELECT id, title, description, status, priority, createdat
+FROM tickets
+WHERE ($1::ticket_status IS NULL OR status = $1::ticket_status)
 ORDER BY id
-LIMIT $2
-OFFSET $3
+LIMIT $3 OFFSET $2
 `
 
 type ListTicketsParams struct {
-	Status NullTicketStatus `json:"status"`
-	Limit  int32            `json:"limit"`
-	Offset int32            `json:"offset"`
+	Status     TicketStatus `json:"status"`
+	PageOffset int32        `json:"page_offset"`
+	PageSize   int32        `json:"page_size"`
 }
 
 func (q *Queries) ListTickets(ctx context.Context, arg ListTicketsParams) ([]Ticket, error) {
-	rows, err := q.query(ctx, q.listTicketsStmt, listTickets, arg.Status, arg.Limit, arg.Offset)
+	rows, err := q.query(ctx, q.listTicketsStmt, listTickets, arg.Status, arg.PageOffset, arg.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +120,34 @@ func (q *Queries) ListTickets(ctx context.Context, arg ListTicketsParams) ([]Tic
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTicket = `-- name: UpdateTicket :one
+UPDATE tickets
+SET status = $1,
+    priority = $2
+WHERE id = $3
+RETURNING id, title, description, status, priority, createdat
+`
+
+type UpdateTicketParams struct {
+	Status   TicketStatus   `json:"status"`
+	Priority TicketPriority `json:"priority"`
+	ID       int64          `json:"id"`
+}
+
+func (q *Queries) UpdateTicket(ctx context.Context, arg UpdateTicketParams) (Ticket, error) {
+	row := q.queryRow(ctx, q.updateTicketStmt, updateTicket, arg.Status, arg.Priority, arg.ID)
+	var i Ticket
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.Createdat,
+	)
+	return i, err
 }
 
 const updateTicketPriority = `-- name: UpdateTicketPriority :one
@@ -157,8 +184,8 @@ RETURNING id, title, description, status, priority, createdat
 `
 
 type UpdateTicketStatusParams struct {
-	Status NullTicketStatus `json:"status"`
-	ID     int64            `json:"id"`
+	Status TicketStatus `json:"status"`
+	ID     int64        `json:"id"`
 }
 
 func (q *Queries) UpdateTicketStatus(ctx context.Context, arg UpdateTicketStatusParams) (Ticket, error) {

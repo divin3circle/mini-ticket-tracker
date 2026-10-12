@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"math/rand"
 	"testing"
 
@@ -14,45 +13,38 @@ func randomInt(min, max int64) int64 {
 	return min + rand.Int63n(max-min+1)
 }
 
-func RandomStatus() NullTicketStatus {
+func RandomStatus() TicketStatus {
 	if randomInt(0, 10)%2 == 0 {
-		return NullTicketStatus{
-			TicketStatus: TicketStatusOpen,
-			Valid:        true,
-		}
+		return TicketStatusOpen
 	}
-
-	return NullTicketStatus{
-		TicketStatus: TicketStatusInProgress,
-		Valid:        true,
-	}
+	return TicketStatusInProgress
 }
 
 func RandomPriority() TicketPriority {
 	if randomInt(0, 10)%2 == 0 {
 		return TicketPriorityLow
 	}
-
 	return TicketPriorityHigh
 }
 
 func createRandomTestTicket(t *testing.T) Ticket {
 	arg := CreateTicketParams{
-		Title: util.RandomString(4),
-		Description: sql.NullString{
-			String: util.RandomString(10),
-			Valid:  true,
-		},
-		Status:   RandomStatus(),
-		Priority: RandomPriority(),
+		Title:       util.RandomString(4),
+		Description: util.RandomString(10),
+		Status:      RandomStatus(),
+		Priority:    RandomPriority(),
 	}
 
 	testTicket, err := testQueries.CreateTicket(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, testTicket)
 
-	require.Equal(t, arg.Status.TicketStatus, testTicket.Status.TicketStatus)
+	require.Equal(t, arg.Title, testTicket.Title)
+	require.Equal(t, arg.Description, testTicket.Description)
+	require.Equal(t, arg.Status, testTicket.Status)
 	require.Equal(t, arg.Priority, testTicket.Priority)
+	require.NotZero(t, testTicket.ID)
+	require.NotZero(t, testTicket.Createdat)
 
 	return testTicket
 }
@@ -69,6 +61,8 @@ func TestGetTicket(t *testing.T) {
 	require.NotEmpty(t, testTicket2)
 
 	require.Equal(t, testTicket1.ID, testTicket2.ID)
+	require.Equal(t, testTicket1.Title, testTicket2.Title)
+	require.Equal(t, testTicket1.Description, testTicket2.Description)
 	require.Equal(t, testTicket1.Status, testTicket2.Status)
 	require.Equal(t, testTicket1.Priority, testTicket2.Priority)
 }
@@ -76,47 +70,47 @@ func TestGetTicket(t *testing.T) {
 func TestCountTicketStats(t *testing.T) {
 	testTicket1 := createRandomTestTicket(t)
 
-	openStatusCount, err := testQueries.CountTicketStats(context.Background(), testTicket1.Status)
+	count, err := testQueries.CountTicketStats(context.Background(), testTicket1.Status)
 	require.NoError(t, err)
-	require.GreaterOrEqual(t, openStatusCount, int64(0))
+	require.GreaterOrEqual(t, count, int64(1)) // at least the ticket we just created
 }
 
 func TestListTickets(t *testing.T) {
-	_, err := testQueries.ListTickets(context.Background(), ListTicketsParams{
-		Status: RandomStatus(),
-		Offset: int32(5),
-		Limit:  int32(10),
+	// make sure there are at least 5 open tickets
+	for i := 0; i < 5; i++ {
+		_, err := testQueries.CreateTicket(context.Background(), CreateTicketParams{
+			Title:       util.RandomString(4),
+			Description: util.RandomString(10),
+			Status:      TicketStatusOpen,
+			Priority:    RandomPriority(),
+		})
+		require.NoError(t, err)
+	}
+
+	tickets, err := testQueries.ListTickets(context.Background(), ListTicketsParams{
+		Status:     TicketStatusOpen,
+		PageOffset: 0,
+		PageSize:   5,
 	})
-
 	require.NoError(t, err)
+	require.Len(t, tickets, 5)
+
+	for _, ticket := range tickets {
+		require.NotEmpty(t, ticket)
+		require.Equal(t, TicketStatusOpen, ticket.Status)
+	}
 }
 
-func TestUpdateTicketPriority(t *testing.T) {
-	testTicket1 := createRandomTestTicket(t)
+func TestUpdateTicket(t *testing.T) {
+	ticket := createRandomTestTicket(t)
 
-	updateTicketPriorityParams := UpdateTicketPriorityParams{
+	updated, err := testQueries.UpdateTicket(context.Background(), UpdateTicketParams{
+		ID:       ticket.ID,
+		Status:   TicketStatusClosed,
 		Priority: TicketPriorityMedium,
-		ID:       testTicket1.ID,
-	}
-
-	updatedTicket, err := testQueries.UpdateTicketPriority(context.Background(), updateTicketPriorityParams)
+	})
 	require.NoError(t, err)
-	require.NotEmpty(t, updatedTicket)
-	require.Equal(t, updatedTicket.Priority, TicketPriorityMedium)
-}
-
-func TestUpdateTicketStatus(t *testing.T) {
-	testTicket1 := createRandomTestTicket(t)
-	updateTicketStatusParams := UpdateTicketStatusParams{
-		Status: NullTicketStatus{
-			TicketStatus: TicketStatusOpen,
-			Valid:        true,
-		},
-		ID: testTicket1.ID,
-	}
-
-	updatedTicket, err := testQueries.UpdateTicketStatus(context.Background(), updateTicketStatusParams)
-	require.NoError(t, err)
-	require.NotEmpty(t, updatedTicket)
-	require.Equal(t, updatedTicket.Status.TicketStatus, TicketStatusOpen)
+	require.Equal(t, ticket.ID, updated.ID)
+	require.Equal(t, TicketStatusClosed, updated.Status)
+	require.Equal(t, TicketPriorityMedium, updated.Priority)
 }
