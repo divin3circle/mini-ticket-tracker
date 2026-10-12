@@ -82,7 +82,7 @@ func TestCountTicketStats(t *testing.T) {
 }
 
 func TestListTickets(t *testing.T) {
-	openTestTickets, err := testQueries.ListTickets(context.Background(), ListTicketsParams{
+	_, err := testQueries.ListTickets(context.Background(), ListTicketsParams{
 		Status: RandomStatus(),
 		Offset: int32(5),
 		Limit:  int32(10),
