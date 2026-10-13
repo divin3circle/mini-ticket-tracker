@@ -68,11 +68,11 @@ func TestGetTicket(t *testing.T) {
 }
 
 func TestCountTicketStats(t *testing.T) {
-	testTicket1 := createRandomTestTicket(t)
+	_ = createRandomTestTicket(t)
 
-	count, err := testQueries.CountTicketStats(context.Background(), testTicket1.Status)
+	count, err := testQueries.CountTicketStats(context.Background())
 	require.NoError(t, err)
-	require.GreaterOrEqual(t, count, int64(1)) // at least the ticket we just created
+	require.GreaterOrEqual(t, len(count), int(1))
 }
 
 func TestListTickets(t *testing.T) {
