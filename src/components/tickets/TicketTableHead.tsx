@@ -4,7 +4,7 @@ import type { HeaderGroup } from '@tanstack/table-core';
 import type { Ticket } from '@/lib/api';
 
 interface TicketTableHeadProps {
-  // @ts-ignore - TanStack Table v9 type inference issues
+  // @ts-expect-error - TanStack Table v9 type inference issues
   headerGroups: HeaderGroup<Ticket, any>[];
 }
 
@@ -17,12 +17,10 @@ export function TicketTableHead({ headerGroups }: TicketTableHeadProps) {
             <th
               key={header.id}
               className="h-10 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"
-              // @ts-ignore - TanStack Table v9 type inference issues
               style={{ width: header.getSize() }}
             >
               {header.isPlaceholder ? null : (
                 <div className="flex items-center gap-2">
-                  {/* @ts-ignore - TanStack Table v9 type inference issues */}
                   {header.column.getCanSort() ? (
                     <Button
                       variant="ghost"
@@ -30,15 +28,12 @@ export function TicketTableHead({ headerGroups }: TicketTableHeadProps) {
                       className="h-8 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        {/* @ts-ignore - TanStack Table v9 type inference issues */}
                         header.column.toggleSorting();
                       }}
                     >
-                      {/* @ts-ignore - TanStack Table v9 type inference issues */}
                       {header.column.getIsSorted() === 'asc' ? '↑' : header.column.getIsSorted() === 'desc' ? '↓' : '↕'}
                     </Button>
                   ) : null}
-                  {/* @ts-ignore - TanStack Table v9 type inference issues */}
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </div>
               )}

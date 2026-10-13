@@ -72,10 +72,7 @@ interface EditTicketSheetProps {
 export function EditTicketSheet({ ticket, isOpen, onClose }: EditTicketSheetProps) {
   const updateTicket = useUpdateTicket();
   const toaster = useToaster();
-  const [status, setStatus] = useState<'OPEN' | 'INPROGRESS' | 'CLOSED'>('OPEN');
-  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('LOW');
-
-  // Initialize state from ticket prop - using useMemo to avoid effect
+  
   const initialStatus = ticket ? mapStatusToBackend(ticket.status) : 'OPEN';
   const initialPriority = ticket ? mapPriorityToBackend(ticket.priority) : 'LOW';
   const [status, setStatus] = useState<'OPEN' | 'INPROGRESS' | 'CLOSED'>(initialStatus);

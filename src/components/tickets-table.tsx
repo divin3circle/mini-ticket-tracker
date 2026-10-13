@@ -105,7 +105,6 @@ export function TicketTable({
   pageSize,
   statusFilter,
 }: TicketTableProps) {
-  // @ts-expect-error - TanStack Table v9 type inference issues with Features
   const table = useTable({
     key: 'ticket-table',
     features,

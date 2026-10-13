@@ -3,9 +3,9 @@ import type { Row } from '@tanstack/table-core';
 import type { Ticket } from '@/lib/api';
 
 interface TicketTableBodyProps {
-  // @ts-ignore - TanStack Table v9 type inference issues
+  // @ts-expect-error - TanStack Table v9 type inference issues
   rows: Row<Ticket, any>[];
-  // @ts-ignore - TanStack Table v9 type inference issues
+  // @ts-expect-error - TanStack Table v9 type inference issues
   onRowClick: (row: Row<Ticket, any>) => void;
 }
 
@@ -23,7 +23,6 @@ export function TicketTableBody({ rows, onRowClick }: TicketTableBodyProps) {
               key={cell.id}
               className="p-3 align-middle [&:has([role=checkbox])]:pr-0"
             >
-              {/* @ts-ignore - TanStack Table v9 type inference issues */}
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </td>
           ))}
