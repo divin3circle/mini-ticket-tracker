@@ -9,6 +9,7 @@ import {
 import {HugeiconsIcon} from "@hugeicons/react";
 import StatCard from "@/components/stat-card.tsx";
 import CreateTicketForm from "@/components/create-ticket.tsx";
+import {TicketTable} from "@/components/tickets-table.tsx";
 
 const MOCK_STATS = [
     {
@@ -50,6 +51,9 @@ export function App() {
             {MOCK_STATS.map((item, index) => (
                 <StatCard statItem={item} key={index} />
             ))}
+        </div>
+        <div className="mt-4">
+            <TicketTable />
         </div>
     </div>
   )
