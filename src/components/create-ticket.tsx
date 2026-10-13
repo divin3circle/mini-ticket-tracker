@@ -19,9 +19,7 @@ import {
 } from '@/components/ui/field';
 import {
   InputGroup,
-  InputGroupAddon,
   InputGroupInput,
-  InputGroupText,
   InputGroupTextarea,
 } from '@/components/ui/input-group';
 import {
@@ -73,7 +71,7 @@ function CreateTicketInputGroup({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 ml-3">
       <Field>
         <FieldLabel htmlFor="ticket-title">Title</FieldLabel>
         <InputGroup className="h-auto">
@@ -85,14 +83,11 @@ function CreateTicketInputGroup({
             required
             disabled={isPending}
           />
-          <InputGroupAddon align="block-start">
-            <InputGroupText>Title</InputGroupText>
-          </InputGroupAddon>
         </InputGroup>
         <FieldDescription>Brief summary of the ticket.</FieldDescription>
       </Field>
 
-      <Field>
+      <Field className="mt-8">
         <FieldLabel htmlFor="ticket-description">Description</FieldLabel>
         <InputGroup>
           <InputGroupTextarea
@@ -107,7 +102,7 @@ function CreateTicketInputGroup({
         <FieldDescription>Detailed breakdown of the ticket.</FieldDescription>
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mt-8">
         <Field>
           <FieldLabel htmlFor="ticket-status">Status</FieldLabel>
           <Select items={statusItems} id="ticket-status" value={status} onValueChange={handleStatusChange} disabled={isPending}>
@@ -196,7 +191,7 @@ export default function CreateTicketForm() {
           Create
         </Button>
       </SheetTrigger>
-      <SheetContent>
+      <SheetContent >
         <SheetHeader>
           <SheetTitle>Create Ticket</SheetTitle>
           <SheetDescription>Add a new ticket to the tracker</SheetDescription>
