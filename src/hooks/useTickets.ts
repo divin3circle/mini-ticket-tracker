@@ -3,16 +3,14 @@ import type {
   Ticket,
   TicketStatus,
   ListTicketsParams,
-  CreateTicketRequest,
   UpdateTicketRequest,
-  TicketStats,
-} from './api';
+} from '@/lib/api';
 import {
   fetchTickets,
   fetchTicketStats,
   createTicket,
   updateTicket,
-} from './api';
+} from '@/lib/api';
 
 export const ticketKeys = {
   all: ['tickets'] as const,
@@ -140,7 +138,7 @@ export function useUpdateTicket() {
       }
     },
     onSettled: (_data, _err, variables) => {
-      queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
+      queryClient.invalidateQueries({queryKey: ticketKeys.lists()});
       queryClient.invalidateQueries({ queryKey: ticketKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: ticketKeys.stats() });
     },

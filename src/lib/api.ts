@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080';
 
 export type TicketStatus = 'open' | 'in_progress' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high';

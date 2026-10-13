@@ -1,20 +1,21 @@
 import {
   tableFeatures,
-  useTable,
   createColumnHelper,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  ColumnSizing,
-  Visibility,
-  RowSelection,
-  Sorting,
-  ColumnOrdering,
-  Filtering,
-  Pagination,
-} from '@tanstack/react-table';
-import type { ColumnDef, TableFeatures, SortingState, ColumnFiltersState, PaginationState } from '@tanstack/react-table';
+  createCoreRowModel,
+  createSortedRowModel,
+  createFilteredRowModel,
+  createPaginatedRowModel,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  columnOrderingFeature,
+  columnFilteringFeature,
+  rowPaginationFeature,
+  filterFn_equals,
+  type ColumnDef,
+} from '@tanstack/table-core';
+import { useTable, flexRender } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -25,6 +26,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Ticket, TicketStatus } from '@/lib/api';
+import {HugeiconsIcon} from "@hugeicons/react";
+import {Loading03FreeIcons} from "@hugeicons/core-free-icons";
 
 const statusColors: Record<TicketStatus, string> = {
   open: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -44,21 +47,84 @@ const statusOptions: { value: TicketStatus; label: string }[] = [
   { value: 'closed', label: 'Closed' },
 ];
 
-const columnHelper = createColumnHelper<Ticket>();
-
-export const tableFeatures = tableFeatures({
-  columnSizing: ColumnSizing,
-  visibility: Visibility,
-  rowSelection: RowSelection,
-  sorting: Sorting,
-  columnOrdering: ColumnOrdering,
-  filtering: Filtering,
-  pagination: Pagination,
-  createRowModel: getCoreRowModel(),
-  createSortedRowModel: getSortedRowModel(),
-  createFilteredRowModel: getFilteredRowModel(),
-  createPaginationRowModel: getPaginationRowModel(),
+const features = tableFeatures({
+  columnSizingFeature,
+  columnVisibilityFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  columnOrderingFeature,
+  columnFilteringFeature,
+  rowPaginationFeature,
+  coreRowModel: createCoreRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  filteredRowModel: createFilteredRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  filterFns: { equals: filterFn_equals },
 });
+
+type Features = typeof features;
+
+const columnHelper = createColumnHelper<Features, Ticket>();
+
+const columns = [
+  columnHelper.accessor('id', {
+    header: 'ID',
+    cell: (info) => info.getValue(),
+    size: 60,
+  }),
+  columnHelper.accessor('title', {
+    header: 'Title',
+    cell: (info) => <div className="font-medium">{info.getValue()}</div>,
+  }),
+  columnHelper.accessor('description', {
+    header: 'Description',
+    cell: (info) => (
+      <div className="text-muted-foreground line-clamp-1 max-w-xs">
+        {info.getValue() || '—'}
+      </div>
+    ),
+  }),
+  columnHelper.accessor('status', {
+    header: 'Status',
+    cell: (info) => {
+      const status = info.getValue() as TicketStatus;
+      return (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status]}`}
+        >
+          {status.replace('_', ' ')}
+        </span>
+      );
+    },
+    filterFn: filterFn_equals,
+  }),
+  columnHelper.accessor('priority', {
+    header: 'Priority',
+    cell: (info) => {
+      const priority = info.getValue() as 'low' | 'medium' | 'high';
+      return (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[priority]}`}
+        >
+          {priority}
+        </span>
+      );
+    },
+    filterFn: filterFn_equals,
+  }),
+  columnHelper.accessor('createdat', {
+    header: 'Created',
+    cell: (info) => {
+      const date = new Date(info.getValue() as string);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    },
+    size: 130,
+  }),
+] as unknown as readonly ColumnDef<Features, Ticket, unknown>[];
 
 export interface TicketTableProps {
   data: Ticket[];
@@ -85,71 +151,9 @@ export function TicketTable({
   pageSize,
   statusFilter,
 }: TicketTableProps) {
-  const columns: ColumnDef<Ticket, typeof tableFeatures>[] = [
-    columnHelper.accessor('id', {
-      header: 'ID',
-      cell: (info) => info.getValue(),
-      size: 60,
-    }),
-    columnHelper.accessor('title', {
-      header: 'Title',
-      cell: (info) => (
-        <div className="font-medium">{info.getValue()}</div>
-      ),
-    }),
-    columnHelper.accessor('description', {
-      header: 'Description',
-      cell: (info) => (
-        <div className="text-muted-foreground line-clamp-1 max-w-xs">
-          {info.getValue() || '—'}
-        </div>
-      ),
-    }),
-    columnHelper.accessor('status', {
-      header: 'Status',
-      cell: (info) => {
-        const status = info.getValue();
-        return (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status]}`}
-          >
-            {status.replace('_', ' ')}
-          </span>
-        );
-      },
-      filterFn: 'equals',
-    }),
-    columnHelper.accessor('priority', {
-      header: 'Priority',
-      cell: (info) => {
-        const priority = info.getValue();
-        return (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[priority]}`}
-          >
-            {priority}
-          </span>
-        );
-      },
-      filterFn: 'equals',
-    }),
-    columnHelper.accessor('createdat', {
-      header: 'Created',
-      cell: (info) => {
-        const date = new Date(info.getValue());
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      },
-      size: 130,
-    }),
-  ];
-
   const table = useTable({
     key: 'ticket-table',
-    features: tableFeatures,
+    features,
     columns,
     data,
     state: {
@@ -174,7 +178,7 @@ export function TicketTable({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <HugeiconsIcon icon={Loading03FreeIcons} className="animate-spin" />
         <span className="sr-only">Loading tickets...</span>
       </div>
     );
@@ -201,12 +205,20 @@ export function TicketTable({
     );
   }
 
+  const handleStatusChange = (value: string | null) => {
+    if (value) onStatusFilterChange(value as TicketStatus);
+  };
+
+  const handlePageSizeChange = (value: number | null) => {
+    if (value !== null) onPageSizeChange(value);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Status:</span>
-          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <Select value={statusFilter} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-40" size="sm">
               <SelectValue placeholder="All" />
             </SelectTrigger>
@@ -223,7 +235,7 @@ export function TicketTable({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize} onValueChange={onPageSizeChange}>
+          <Select value={pageSize} onValueChange={handlePageSizeChange}>
             <SelectTrigger className="w-32" size="sm">
               <SelectValue />
             </SelectTrigger>
@@ -266,7 +278,7 @@ export function TicketTable({
                             {header.column.getIsSorted() === 'asc' ? '↑' : header.column.getIsSorted() === 'desc' ? '↓' : '↕'}
                           </Button>
                         ) : null}
-                        <table.FlexRender header={header} />
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                       </div>
                     )}
                   </th>
@@ -285,7 +297,7 @@ export function TicketTable({
                     key={cell.id}
                     className="p-3 align-middle [&:has([role=checkbox])]:pr-0"
                   >
-                    <table.FlexRender cell={cell} />
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
               </tr>

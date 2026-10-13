@@ -1,14 +1,12 @@
-import { useToastManager } from '@/components/ui/toast';
+import { toast } from '@/components/ui/toast';
 
 export function useToaster() {
-  const { toasts, toastManager } = useToastManager();
-
   const create = (options: {
     title: string;
     description?: string;
     type?: 'success' | 'error' | 'info' | 'warning' | 'loading';
   }) => {
-    toastManager.addToast({
+    toast.add({
       id: crypto.randomUUID(),
       title: options.title,
       description: options.description,
@@ -17,9 +15,5 @@ export function useToaster() {
     });
   };
 
-  const dismiss = (id: string) => {
-    toastManager.dismissToast(id);
-  };
-
-  return { create, dismiss, toasts };
+  return { create };
 }

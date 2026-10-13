@@ -15,13 +15,13 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Field,
   FieldDescription,
-  FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  InputGroupText,
   InputGroupTextarea,
 } from '@/components/ui/input-group';
 import {
@@ -50,7 +50,7 @@ function CreateTicketInputGroup({
   onSubmit,
   isPending,
 }: {
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (data: { title: string; description: string; status: 'OPEN' | 'INPROGRESS'; priority: 'LOW' | 'MEDIUM' | 'HIGH' }) => void;
   isPending: boolean;
 }) {
   const [title, setTitle] = useState('');
@@ -60,7 +60,16 @@ function CreateTicketInputGroup({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(e);
+    if (!title.trim()) return;
+    onSubmit({ title, description, status, priority });
+  };
+
+  const handleStatusChange = (value: string | null) => {
+    if (value) setStatus(value as 'OPEN' | 'INPROGRESS');
+  };
+
+  const handlePriorityChange = (value: string | null) => {
+    if (value) setPriority(value as 'LOW' | 'MEDIUM' | 'HIGH');
   };
 
   return (
@@ -101,7 +110,7 @@ function CreateTicketInputGroup({
       <div className="grid grid-cols-2 gap-4">
         <Field>
           <FieldLabel htmlFor="ticket-status">Status</FieldLabel>
-          <Select items={statusItems} id="ticket-status" value={status} onValueChange={setStatus} disabled={isPending}>
+          <Select items={statusItems} id="ticket-status" value={status} onValueChange={handleStatusChange} disabled={isPending}>
             <SelectTrigger className="w-full" size="sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -120,7 +129,7 @@ function CreateTicketInputGroup({
 
         <Field>
           <FieldLabel htmlFor="ticket-priority">Priority</FieldLabel>
-          <Select items={priorityItems} id="ticket-priority" value={priority} onValueChange={setPriority} disabled={isPending}>
+          <Select items={priorityItems} id="ticket-priority" value={priority} onValueChange={handlePriorityChange} disabled={isPending}>
             <SelectTrigger className="w-full" size="sm">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
@@ -157,16 +166,9 @@ export default function CreateTicketForm() {
   const createTicket = useCreateTicket();
   const toaster = useToaster();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const status = formData.get('status') as 'OPEN' | 'INPROGRESS';
-    const priority = formData.get('priority') as 'LOW' | 'MEDIUM' | 'HIGH';
-
+  const handleSubmit = (data: { title: string; description: string; status: 'OPEN' | 'INPROGRESS'; priority: 'LOW' | 'MEDIUM' | 'HIGH' }) => {
     createTicket.mutate(
-      { title, description, status, priority },
+      data,
       {
         onSuccess: () => {
           toaster.create({
@@ -174,13 +176,12 @@ export default function CreateTicketForm() {
             description: 'Ticket created successfully',
             type: 'success',
           });
-          (e.currentTarget as HTMLFormElement).reset();
         },
         onError: (error: Error) => {
           toaster.create({
             title: 'Error',
             description: error.message,
-            type: 'destructive',
+            type: 'error',
           });
         },
       }
@@ -189,7 +190,7 @@ export default function CreateTicketForm() {
 
   return (
     <Sheet>
-      <SheetTrigger asChild>
+      <SheetTrigger>
         <Button>
           <HugeiconsIcon icon={Plus} />
           Create
