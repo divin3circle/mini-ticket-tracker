@@ -13,39 +13,18 @@ import {
   columnFilteringFeature,
   rowPaginationFeature,
   filterFn_equals,
-  type ColumnDef,
 } from '@tanstack/table-core';
-import { useTable, flexRender } from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import type { Ticket, TicketStatus } from '@/lib/api';
-import {HugeiconsIcon} from "@hugeicons/react";
-import {Loading03FreeIcons} from "@hugeicons/core-free-icons";
-
-const statusColors: Record<TicketStatus, string> = {
-  open: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  in_progress: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  closed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-};
-
-const priorityColors: Record<'low' | 'medium' | 'high', string> = {
-  low: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-  medium: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-};
-
-const statusOptions: { value: TicketStatus; label: string }[] = [
-  { value: 'open', label: 'Open' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'closed', label: 'Closed' },
-];
+import { TicketTableHeader } from './tickets/TicketTableHeader';
+import { TicketTableHead } from './tickets/TicketTableHead';
+import { TicketTableBody } from './tickets/TicketTableBody';
+import { TicketTablePagination } from './tickets/TicketTablePagination';
+import { TicketTableSkeleton } from './tickets/TicketTableSkeleton';
+import type { Ticket, TicketStatus, TicketPriority } from '@/lib/api';
+import { StatusBadge } from './tickets/StatusBadge';
+import { PriorityBadge } from './tickets/PriorityBadge';
+import { formatDate } from '@/lib/ticketUtils';
 
 const features = tableFeatures({
   columnSizingFeature,
@@ -62,9 +41,7 @@ const features = tableFeatures({
   filterFns: { equals: filterFn_equals },
 });
 
-type Features = typeof features;
-
-const columnHelper = createColumnHelper<Features, Ticket>();
+const columnHelper = createColumnHelper();
 
 const columns = [
   columnHelper.accessor('id', {
@@ -86,45 +63,20 @@ const columns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => {
-      const status = info.getValue() as TicketStatus;
-      return (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status]}`}
-        >
-          {status.replace('_', ' ')}
-        </span>
-      );
-    },
+    cell: (info) => <StatusBadge status={info.getValue() as TicketStatus} />,
     filterFn: filterFn_equals,
   }),
   columnHelper.accessor('priority', {
     header: 'Priority',
-    cell: (info) => {
-      const priority = info.getValue() as 'low' | 'medium' | 'high';
-      return (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[priority]}`}
-        >
-          {priority}
-        </span>
-      );
-    },
+    cell: (info) => <PriorityBadge priority={info.getValue() as TicketPriority} />,
     filterFn: filterFn_equals,
   }),
   columnHelper.accessor('createdat', {
     header: 'Created',
-    cell: (info) => {
-      const date = new Date(info.getValue() as string);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    },
+    cell: (info) => formatDate(info.getValue() as string),
     size: 130,
   }),
-] as unknown as readonly ColumnDef<Features, Ticket, unknown>[];
+];
 
 export interface TicketTableProps {
   data: Ticket[];
@@ -134,6 +86,7 @@ export interface TicketTableProps {
   onPageChange: (pageIndex: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onStatusFilterChange: (status: TicketStatus) => void;
+  onRowClick: (ticket: Ticket) => void;
   currentPage: number;
   pageSize: number;
   statusFilter: TicketStatus;
@@ -147,10 +100,12 @@ export function TicketTable({
   onPageChange,
   onPageSizeChange,
   onStatusFilterChange,
+  onRowClick,
   currentPage,
   pageSize,
   statusFilter,
 }: TicketTableProps) {
+  // @ts-expect-error - TanStack Table v9 type inference issues with Features
   const table = useTable({
     key: 'ticket-table',
     features,
@@ -176,12 +131,7 @@ export function TicketTable({
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <HugeiconsIcon icon={Loading03FreeIcons} className="animate-spin" />
-        <span className="sr-only">Loading tickets...</span>
-      </div>
-    );
+    return <TicketTableSkeleton />;
   }
 
   if (isError) {
@@ -205,130 +155,40 @@ export function TicketTable({
     );
   }
 
-  const handleStatusChange = (value: string | null) => {
-    if (value) onStatusFilterChange(value as TicketStatus);
+  const handleRowClick = (row: { original: Ticket }) => {
+    onRowClick(row.original);
   };
 
-  const handlePageSizeChange = (value: number | null) => {
-    if (value !== null) onPageSizeChange(value);
-  };
+  const hasNextPage = data.length === pageSize;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Status:</span>
-          <Select value={statusFilter} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-40" size="sm">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-32" size="sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {[10, 25, 50, 100].map((size) => (
-                  <SelectItem key={size} value={size}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <TicketTableHeader
+        statusFilter={statusFilter}
+        onStatusFilterChange={onStatusFilterChange}
+        pageSize={pageSize}
+        onPageSizeChange={onPageSizeChange}
+      />
 
       <div className="overflow-x-auto">
         <table className="w-full caption-bottom text-sm">
-          <thead className="[&_tr]:border-b">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="h-10 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0"
-                    style={{ width: header.getSize() }}
-                  >
-                    {header.isPlaceholder ? null : (
-                      <div className="flex items-center gap-2">
-                        {header.column.getCanSort() ? (
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            className="h-8 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              header.column.toggleSorting();
-                            }}
-                          >
-                            {header.column.getIsSorted() === 'asc' ? '↑' : header.column.getIsSorted() === 'desc' ? '↓' : '↕'}
-                          </Button>
-                        ) : null}
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                      </div>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="[&_tr:last-child]:border-0">
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-              >
-                {row.getAllCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="p-3 align-middle [&:has([role=checkbox])]:pr-0"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
+          {/* @ts-expect-error - TanStack Table v9 type inference issues */}
+          <TicketTableHead headerGroups={table.getHeaderGroups()} />
+          {/* @ts-expect-error - TanStack Table v9 type inference issues */}
+          <TicketTableBody
+            rows={table.getRowModel().rows}
+            onRowClick={handleRowClick}
+          />
         </table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, data.length)} of {data.length} results
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 0}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={data.length < pageSize}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <TicketTablePagination
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalRows={data.length}
+        onPageChange={onPageChange}
+        hasNextPage={hasNextPage}
+      />
     </div>
   );
 }

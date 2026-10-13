@@ -103,7 +103,7 @@ const listTickets = `-- name: ListTickets :many
 SELECT id, title, description, status, priority, createdat
 FROM tickets
 WHERE ($1::ticket_status IS NULL OR status = $1::ticket_status)
-ORDER BY id
+ORDER BY createdat DESC
 LIMIT $3 OFFSET $2
 `
 

@@ -16,7 +16,7 @@ WHERE id = $1 LIMIT 1;
 SELECT id, title, description, status, priority, createdat
 FROM tickets
 WHERE (@status::ticket_status IS NULL OR status = @status::ticket_status)
-ORDER BY id
+ORDER BY createdat DESC
 LIMIT @page_size OFFSET @page_offset;
 
 -- name: UpdateTicket :one

@@ -1,4 +1,5 @@
-import type { Ticket, TicketStatus, TicketPriority } from '@/lib/api';
+export type { Ticket, TicketStatus, TicketPriority } from '@/lib/api';
+import type { TicketStatus, TicketPriority } from '@/lib/api';
 
 export const TICKET_STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
   { value: 'open', label: 'Open' },

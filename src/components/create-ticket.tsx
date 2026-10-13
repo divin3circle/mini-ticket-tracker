@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { useCreateTicket } from '@/hooks/useTickets';
 import { useToaster } from '@/hooks/useToaster';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const statusItems = [
   { label: 'Open', value: 'OPEN' },
@@ -149,7 +150,7 @@ function CreateTicketInputGroup({
           </Button>
         </SheetClose>
         <Button type="submit" disabled={isPending || !title.trim()}>
-          <HugeiconsIcon icon={Save} className={isPending ? 'animate-spin' : ''} />
+          {isPending ? <LoadingSpinner size="sm" /> : <HugeiconsIcon icon={Save} />}
           {isPending ? 'Creating...' : 'Create Ticket'}
         </Button>
       </SheetFooter>

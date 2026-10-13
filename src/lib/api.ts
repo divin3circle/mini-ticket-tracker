@@ -63,9 +63,20 @@ function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+function mapStatusToBackend(status: TicketStatus): string {
+  switch (status) {
+    case 'open':
+      return 'OPEN';
+    case 'in_progress':
+      return 'INPROGRESS';
+    case 'closed':
+      return 'CLOSED';
+  }
+}
+
 export async function fetchTickets(params: ListTicketsParams): Promise<ListTicketsResponse> {
   const searchParams = new URLSearchParams({
-    status: params.status.toUpperCase(),
+    status: mapStatusToBackend(params.status),
     page_id: params.page_id.toString(),
     page_size: params.page_size.toString(),
   });
